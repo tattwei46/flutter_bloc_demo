@@ -1,0 +1,120 @@
+import 'dart:async';
+
+import 'package:flutter_bloc_example/models/todo_list.dart';
+import 'package:flutter_bloc_example/models/todo_item.dart';
+import 'package:rxdart/subjects.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class TodoAddition {
+  final String key;
+  final String title;
+  final String description;
+  final bool isDone;
+
+  TodoAddition(this.key, this.title, this.description, this.isDone);
+}
+
+class TodoRemoval {
+  final String name;
+
+  TodoRemoval(this.name);
+}
+
+class TodoBloc {
+  final TodoList _todoList = TodoList();
+
+  final BehaviorSubject<List<Todo>> _list =
+      BehaviorSubject<List<Todo>>(seedValue: []);
+
+  final BehaviorSubject<int> _listCount = BehaviorSubject<int>(seedValue: 0);
+
+  final StreamController<TodoAddition> _todoAdditionController =
+      StreamController<TodoAddition>();
+
+  final StreamController<TodoRemoval> _todoRemovalController =
+      StreamController<TodoRemoval>();
+
+  TodoBloc() {
+    _todoAdditionController.stream.listen((addition) {
+
+      int currentCount = _todoList.getListCount;
+
+      // Clear previous list before fetching
+      _todoList.clearList();
+
+      //to generate new entry of Word class
+      _todoList.addToList(
+          Todo(addition.key, addition.title, addition.description, addition.isDone));
+      _list.add(_todoList.getList);
+      int updateCount = _todoList.getListCount;
+      if (updateCount != currentCount) {
+        _listCount.add(updateCount);
+      }
+    });
+
+//    _todoRemovalController.stream.listen((removal){
+//      int currentCount = _todoList.getTodoListCount;
+//      _todoList.remove(removal.name);
+//      print(_todoList.getTodoList.toString());
+//      _list.add(_todoList.getTodoList);
+//      int updateCount = _todoList.getTodoListCount;
+//      if (updateCount != currentCount) {
+//        _listCount.add(updateCount);
+//      }
+//    });
+  }
+
+  void getTodoList() {
+    final List<Todo> _todoList = new List<Todo>();
+
+    Firestore.instance
+        .collection("todo")
+        .snapshots()
+        .listen((QuerySnapshot event) {
+      _todoList.clear();
+
+      if (event.documents.length > 0) {
+        _todoList.addAll(event.documents.map((snapshot) {
+          //We have _todoList to force _todoAdditonalController.add to run. We do nothing with _todoList
+          Todo todo = Todo.fromSnapshot(snapshot);
+          _todoAdditionController.add(
+              TodoAddition(snapshot.documentID, todo.name, todo.description, todo.isDone));
+        }));
+      }
+    }).onError((handleError) {
+      print("Error getting todo list");
+    });
+  }
+
+  void updateTodo(Todo todo) {
+    if (todo != null) {
+      Firestore.instance.collection("todo").document(todo.key).updateData({
+        'completed': !todo.isDone,
+      }).then((onSaved) {
+
+        // After saved, we refresh list
+        getTodoList();
+
+      }).catchError((e) {
+        print(e.toString());
+      });
+    } else {
+      print("documentId is null");
+    }
+  }
+
+  Sink<TodoAddition> get todoAdditionSink => _todoAdditionController.sink;
+
+  Sink<TodoRemoval> get todoRemovalSink => _todoRemovalController.sink;
+
+  Stream<int> get listCountStream => _listCount.stream;
+
+  Stream<List<Todo>> get listStream => _list.stream;
+
+  void dispose() {
+    _list.close();
+    _listCount.close();
+    _todoAdditionController.close();
+    _todoRemovalController.close();
+  }
+}
