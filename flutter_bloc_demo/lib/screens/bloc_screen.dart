@@ -2,27 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc_example/models/todo_item.dart';
 import 'package:flutter_bloc_example/blocs/todo_provider.dart';
 import 'package:flutter_bloc_example/common_widgets/common_widgets.dart';
-import 'package:flutter_bloc_example/screens/add_todo_screen.dart';
+import 'package:flutter_bloc_example/common_widgets/add_todo_screen.dart';
 import 'package:flutter_bloc_example/blocs/todo_bloc.dart';
 import 'package:flutter_bloc_example/common_functions/common_functions.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BlocScreen extends StatelessWidget {
   BlocScreen();
-
-  FunctionStatus functionStatus = FunctionStatus.UNKNOWN;
-
-  void deleteTodo(String documentId, TodoBloc bloc) {
-    Firestore.instance
-        .collection("todo")
-        .document(documentId)
-        .delete()
-        .then((onValue) {
-      bloc.getTodoList();
-    }).catchError((e) {
-      print(e);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +34,7 @@ class BlocScreen extends StatelessWidget {
                   background: Container(color: Colors.red),
                   onDismissed: (direction) async {
                     int index = todoBloc.getIndexFromKey(item.key);
-                    deleteTodo(item.key, todoBloc);
+                    FunctionStatus functionStatus = CommonFunctions.deleteTodo(item.key, null);
                     todoBloc.todoRemovalSink.add(TodoRemoval(index));
                   },
                   child: ListTile(

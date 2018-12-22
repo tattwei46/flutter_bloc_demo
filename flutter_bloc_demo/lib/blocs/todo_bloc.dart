@@ -36,15 +36,20 @@ class TodoBloc {
 
   TodoBloc() {
     _todoAdditionController.stream.listen((addition) {
-
       int currentCount = _todoList.getListCount;
 
       // Clear previous list before fetching
       //_todoList.clearList();
 
+      for (int i =0; i < _todoList.getListCount; i++) {
+        if (addition.key == _todoList.getList[i].key){
+          return;
+        }
+      }
+
       //to generate new entry of Word class
-      _todoList.addToList(
-          Todo(addition.key, addition.title, addition.description, addition.isDone));
+      _todoList.addToList(Todo(
+          addition.key, addition.title, addition.description, addition.isDone));
       _list.add(_todoList.getList);
       int updateCount = _todoList.getListCount;
       if (updateCount != currentCount) {
@@ -52,7 +57,7 @@ class TodoBloc {
       }
     });
 
-    _todoRemovalController.stream.listen((removal){
+    _todoRemovalController.stream.listen((removal) {
       int currentCount = _todoList.getListCount;
       _todoList.removeAtIndex(removal.index);
       _list.add(_todoList.getList);
@@ -65,22 +70,24 @@ class TodoBloc {
 
   void clearAll() {
     _todoList.clearList();
+    _listCount.add(_todoList.getListCount);
+    _list.add(_todoList.getList);
   }
 
-  void removeAtIndex(int index){
+  void removeAtIndex(int index) {
     _todoList.removeAtIndex(index);
   }
 
-  int getIndexFromKey(String key){
-    for (int index=0;index < _todoList.getListCount; index++){
-      if (key ==_todoList.getTodoFromList(index).key){
+  int getIndexFromKey(String key) {
+    for (int index = 0; index < _todoList.getListCount; index++) {
+      if (key == _todoList.getTodoFromList(index).key) {
         return index;
       }
     }
   }
 
   void getTodoList() {
-    clearAll();
+    //clearAll();
     final List<Todo> _todoList = new List<Todo>();
 
     _todoList.clear();
@@ -95,8 +102,8 @@ class TodoBloc {
         _todoList.addAll(event.documents.map((snapshot) {
           //We have _todoList to force _todoAdditonalController.add to run. We do nothing with _todoList
           Todo todo = Todo.fromSnapshot(snapshot);
-          _todoAdditionController.add(
-              TodoAddition(snapshot.documentID, todo.name, todo.description, todo.isDone));
+          _todoAdditionController.add(TodoAddition(
+              snapshot.documentID, todo.name, todo.description, todo.isDone));
         }));
       }
     }).onError((handleError) {
@@ -105,14 +112,10 @@ class TodoBloc {
   }
 
   void updateTodo(Todo todo) {
+    clearAll();
     if (todo != null) {
       Firestore.instance.collection("todo").document(todo.key).updateData({
         'completed': !todo.isDone,
-      }).then((onSaved) {
-
-        // After saved, we refresh list
-        getTodoList();
-
       }).catchError((e) {
         print(e.toString());
       });

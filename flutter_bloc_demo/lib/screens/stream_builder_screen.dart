@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc_example/models/todo_item.dart';
 import 'package:flutter_bloc_example/models/todo_list.dart';
 import 'package:flutter_bloc_example/common_widgets/common_widgets.dart';
-import 'package:flutter_bloc_example/screens/add_todo_screen.dart';
+import 'package:flutter_bloc_example/common_widgets/add_todo_screen.dart';
 import 'package:flutter_bloc_example/common_functions/common_functions.dart';
 
 enum Result {
