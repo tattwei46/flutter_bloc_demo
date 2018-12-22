@@ -15,9 +15,9 @@ class TodoAddition {
 }
 
 class TodoRemoval {
-  final String name;
+  final int index;
 
-  TodoRemoval(this.name);
+  TodoRemoval(this.index);
 }
 
 class TodoBloc {
@@ -40,7 +40,7 @@ class TodoBloc {
       int currentCount = _todoList.getListCount;
 
       // Clear previous list before fetching
-      _todoList.clearList();
+      //_todoList.clearList();
 
       //to generate new entry of Word class
       _todoList.addToList(
@@ -52,20 +52,38 @@ class TodoBloc {
       }
     });
 
-//    _todoRemovalController.stream.listen((removal){
-//      int currentCount = _todoList.getTodoListCount;
-//      _todoList.remove(removal.name);
-//      print(_todoList.getTodoList.toString());
-//      _list.add(_todoList.getTodoList);
-//      int updateCount = _todoList.getTodoListCount;
-//      if (updateCount != currentCount) {
-//        _listCount.add(updateCount);
-//      }
-//    });
+    _todoRemovalController.stream.listen((removal){
+      int currentCount = _todoList.getListCount;
+      _todoList.removeAtIndex(removal.index);
+      _list.add(_todoList.getList);
+      int updateCount = _todoList.getListCount;
+      if (updateCount != currentCount) {
+        _listCount.add(updateCount);
+      }
+    });
+  }
+
+  void clearAll() {
+    _todoList.clearList();
+  }
+
+  void removeAtIndex(int index){
+    _todoList.removeAtIndex(index);
+  }
+
+  int getIndexFromKey(String key){
+    for (int index=0;index < _todoList.getListCount; index++){
+      if (key ==_todoList.getTodoFromList(index).key){
+        return index;
+      }
+    }
   }
 
   void getTodoList() {
+    clearAll();
     final List<Todo> _todoList = new List<Todo>();
+
+    _todoList.clear();
 
     Firestore.instance
         .collection("todo")

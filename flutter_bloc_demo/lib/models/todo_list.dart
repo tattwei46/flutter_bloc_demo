@@ -15,6 +15,9 @@ class TodoList {
 //    _todoList.add(Todo(key, name, description, isDone));
 //  }
 
+  void removeAtIndex(int index){
+    _todoList.removeAt(index);
+  }
   void addToList (Todo todo) {
     _todoList.add(todo);
   }

@@ -1,11 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc_example/models/todo_item.dart';
 import 'package:flutter_bloc_example/blocs/todo_provider.dart';
-import 'package:flutter_bloc_example/blocs/todo_bloc.dart';
 import 'package:flutter_bloc_example/common_widgets/common_widgets.dart';
+import 'package:flutter_bloc_example/screens/add_todo_screen.dart';
+import 'package:flutter_bloc_example/blocs/todo_bloc.dart';
+import 'package:flutter_bloc_example/common_functions/common_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BlocScreen extends StatelessWidget {
   BlocScreen();
+
+  FunctionStatus functionStatus = FunctionStatus.UNKNOWN;
+
+  void deleteTodo(String documentId, TodoBloc bloc) {
+    Firestore.instance
+        .collection("todo")
+        .document(documentId)
+        .delete()
+        .then((onValue) {
+      bloc.getTodoList();
+    }).catchError((e) {
+      print(e);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,26 +32,36 @@ class BlocScreen extends StatelessWidget {
     todoBloc.getTodoList();
 
     return Scaffold(
+        appBar: AppBar(
+          title: Text("Flutter Bloc Demo"),
+        ),
         body: StreamBuilder<List<Todo>>(
           stream: todoBloc.listStream,
           builder: (context, snapshot) {
-
             // No Result
             if (snapshot.data == null || snapshot.data.isEmpty) {
               return CommonWidget().showNoResult();
             } else if (snapshot.data.length > 0) {
-
               // Result
               final tiles = snapshot.data.map((item) {
-                return new ListTile(
-                  title: new Text(item.name),
-                  subtitle: (new Text(item.description)),
-                  trailing: item.isDone
-                      ? Icon(Icons.done_outline, color: Colors.green)
-                      : Icon(Icons.done, color: Colors.grey),
-                  onTap: () {
-                    todoBloc.updateTodo(item);
+                return Dismissible(
+                  key: Key(item.key),
+                  background: Container(color: Colors.red),
+                  onDismissed: (direction) async {
+                    int index = todoBloc.getIndexFromKey(item.key);
+                    deleteTodo(item.key, todoBloc);
+                    todoBloc.todoRemovalSink.add(TodoRemoval(index));
                   },
+                  child: ListTile(
+                    title: new Text(item.name),
+                    subtitle: (new Text(item.description)),
+                    trailing: item.isDone
+                        ? Icon(Icons.done_outline, color: Colors.green)
+                        : Icon(Icons.done, color: Colors.grey),
+                    onTap: () {
+                      todoBloc.updateTodo(item);
+                    },
+                  ),
                 );
               });
 
@@ -52,8 +79,9 @@ class BlocScreen extends StatelessWidget {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            todoBloc.todoAdditionSink
-                .add(TodoAddition("A", "test", "description", false));
+            Navigator.of(context).push(new MaterialPageRoute(
+                builder: (BuildContext context) =>
+                    AddTodoScreen(null, todoBloc)));
           },
           tooltip: 'Increment',
           child: Icon(Icons.add),
